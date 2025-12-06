@@ -1,0 +1,13 @@
+bcryptjs -> used for password hashing
+express -> used for routing
+cookie-parser -> used for parsing of the cookies
+claudinary -> 
+cors -> it is used for authentication to allow only those url which are verified 
+dotenv -> hides the important url, key
+         and make them available to the process at runtime only
+jsonwebtoken -> used for the generation of tokens which have basically 3 parts 
+mongoose -> for using it as database
+multer -> node.js middleware for converting the binary to files generation
+nodemailer -> for mailing the user when forgot password is accessed
+nodemon -> for running the server without any manual run, after any changes to the files
+morgan -> for logging the user activities
