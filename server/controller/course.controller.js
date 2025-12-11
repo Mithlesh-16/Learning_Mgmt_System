@@ -154,10 +154,83 @@ const removeCourse = async(req, res, next) => {
     }
 }
 
+const addLecturesToCourseById = async(req, res, next) => {
+    try{
+        const {title, description} = req.body;
+    const {id} = req.params;
+
+    if(!title || !description){
+        return next(new AppError("All Fields are required", 400));
+    }
+    const course = await Course.findById(id);
+    if(!course){
+        return next(new AppError("Course with given id doesn't Exist in database", 500));
+    }
+    
+    const lectureData = {
+        title, 
+        description,
+        lecture: {}
+    };
+
+    try{
+            console.log("inside try Block of file uploading");
+
+                if(req.file){
+                const result = await cloudinary.v2.uploader.upload(req.file.path, {
+                    folder: 'lms',
+                    height: 400,
+                    width: 400,
+                    crop: "fill",
+                    gravity: "faces"
+                })
+
+
+                if(result){
+                    lectureData.lecture.public_id = result.public_id;
+                    lectureData.lecture.secure_url = result.secure_url;
+                    console.log(result, "inside the result block");
+                    //remove file from server
+                    fs.rm(`../uploads/${req.file.path}`, (err) => {
+                        console.log("Removed the files successfully");
+                    });
+                }
+
+
+                res.status(200).json({
+                    success: true,
+                    message: "Course created successfully!!",
+                    course
+                })
+
+            }
+
+        }catch(e){
+            return next(new AppError(e.message, 500))
+
+        }
+
+        course.lectures.push(lectureData);
+        course.numberOfLectures = course.lectures.length;
+        await course.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Lectures added to the course Successfully !!",
+            course
+        })
+    }
+    catch(e){
+        return next(new AppError(e.message, 400));
+    }
+
+}
+
 export {
     getAllCourses,
     getLecturesByCourseId,
     createCourse,
     updateCourse,
-    removeCourse
+    removeCourse,
+    addLecturesToCourseById
 }
