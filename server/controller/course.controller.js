@@ -16,7 +16,6 @@ const getAllCourses = async(req, res, next) => {
     catch(err){
         return next(new AppError(err.message, 500))
     }
-    
 
 }
 
@@ -35,7 +34,7 @@ const getLecturesByCourseId = async(req, res, next) => {
 
 }
 
-const createCourse = async(req, res, next) => {
+const createCourse = async(req, res, next) => { 
     try{
         const {title, description, category, createdBy} = req.body;
         
