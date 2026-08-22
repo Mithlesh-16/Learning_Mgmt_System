@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import userRoutes from './routes/user.routes.js';
 import courseRoutes from './routes/course.routes.js';
+import payRoutes from './routes/payment.routes.js';
 import errorMiddleware from './middlewares/error.middleware.js';
 const app = express();
 
@@ -12,6 +13,7 @@ app.use(cors({
     origin: process.env.frontend_url,
     credentials : true
 }));
+
 app.use(cookieParser());
 app.use(morgan('dev'));
 app.use(express.urlencoded({extended: true}));
@@ -21,6 +23,7 @@ app.use('/api/v1/users', userRoutes);
 
 //courses
 app.use('/api/v1/courses', courseRoutes);
+app.use('/api/v1/payments', payRoutes);
 
 // //routes of 3 modules
 app.all('*', (req, res) => {

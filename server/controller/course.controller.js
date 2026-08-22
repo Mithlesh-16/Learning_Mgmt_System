@@ -16,7 +16,6 @@ const getAllCourses = async(req, res, next) => {
     catch(err){
         return next(new AppError(err.message, 500))
     }
-
 }
 
 const getLecturesByCourseId = async(req, res, next) => {

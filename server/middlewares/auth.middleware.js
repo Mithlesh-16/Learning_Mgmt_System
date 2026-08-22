@@ -6,7 +6,7 @@ const isLoggedIn = async function(req, res, next){
         return next(new AppError("unAuthenticated User, Please Login Again", 401));
     }
 
-    const userDetails = await jwt.verify(user_info, process.env.JWT_SECRET);
+    const userDetails = jwt.verify(user_info, process.env.JWT_SECRET);
 
     req.user = userDetails;
     next();
@@ -23,7 +23,20 @@ const authorizedRoles = (...roles) => async(req, res, next) =>{
     next();
 }
 
+const authorizedSubscriber = async(req, res, next) => {
+    const currentUserRoles = req.user.role;
+    const subscription = req.user.subscription;
+
+    if(currentUserRoles != "ADMIN" && subscription.status != "active"){
+        return next(
+            new AppError("Please Subscribe to access this course !!", 400)
+        )
+    }
+    next();
+}
+
 export {
     isLoggedIn,
-    authorizedRoles
+    authorizedRoles,
+    authorizedSubscriber
 }

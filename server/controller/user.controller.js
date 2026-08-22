@@ -1,5 +1,5 @@
 import AppError from '../utils/error.util.js'
-import user from '../models/user. model.js';
+import user from '../models/user.model.js';
 import cloudinary from 'cloudinary';
 import fs from 'fs';
 import { getSystemErrorMessage } from 'util';
@@ -13,7 +13,7 @@ const cookieOptions = {
 }
 
 const registerUser = async (req, res, next) => {
-    const {fullName, email, password} = req.body;
+    const {fullName, email, password, role} = req.body;
     
     if(!fullName || !email || !password){
         return next(new AppError('All Fields are Required', 400));
@@ -32,8 +32,8 @@ const registerUser = async (req, res, next) => {
         avatar:{
             public_id: "email",
             secure_url: "https://res.cloudinary.com/dqb2i2ca9/image/upload/v1679957893/lms/default_avatar_oqs6u3.png"
-        }
-
+        },
+        role
     });
 
     if(!User){
