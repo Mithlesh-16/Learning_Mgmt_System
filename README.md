@@ -4,6 +4,8 @@ A full-stack Learning Management System built with the MERN stack, with a Node.j
 
 The project focuses on the backend architecture and core services required by an online learning platform, including authentication, role-based access control, course management, media uploads, subscriptions, payments, and password recovery.
 
+(The project is being developed incrementally, with the backend services and API layer serving as the foundation for the frontend).
+
 The React client is being added on top of the existing API layer to provide separate experiences for students and administrators.
 
 ---
