@@ -1,73 +1,150 @@
 # Learning Management System (LMS)
 
-A backend-focused Learning Management System built with Node.js, Express, and MongoDB.
+A full-stack Learning Management System built with the MERN stack, with a Node.js and Express backend and a React-based client planned as the frontend layer.
 
-The project started as an exploration of how a real learning platform can be structured around authentication, role-based access, course management, subscriptions, media storage, and password recovery. The backend is organized into separate layers for routes, controllers, models, middleware, configuration, and utilities.
+The project focuses on the backend architecture and core services required by an online learning platform, including authentication, role-based access control, course management, media uploads, subscriptions, payments, and password recovery.
 
-## Overview
-
-The LMS provides the core backend functionality required by an online learning platform.
-
-A user can create an account, log in, manage their profile, subscribe to the platform, and access courses based on their subscription status. Administrators have additional privileges for creating, updating, deleting, and managing courses and lectures.
-
-The application also integrates external services for specific parts of the system:
-
-- **MongoDB** for persistent data storage
-- **Cloudinary** for image/media storage
-- **Razorpay** for subscription payments
-- **Nodemailer** for password-reset emails
-
-The current repository mainly contains the backend implementation. A small HTML page is included separately to test the Razorpay subscription checkout flow.
+The React client is being added on top of the existing API layer to provide separate experiences for students and administrators.
 
 ---
 
-## What the system currently supports
+## Overview
 
-### User authentication
+The idea behind this project is to build an LMS in which the backend handles authentication, business logic, data management, payments, and protected course access, while the frontend communicates with the backend through REST APIs.
 
-The authentication system supports:
+The current backend supports:
+
+- User registration and authentication
+- JWT-based authorization
+- Role-based access control
+- Course creation and management
+- Lecture uploads
+- User profile management
+- Subscription management
+- Razorpay payment integration
+- Cloudinary media storage
+- Password recovery through email
+
+The next stage of the project is to build a React client that consumes these APIs and provides the actual user interface for students and administrators.
+
+---
+
+## Planned MERN Architecture
+
+The overall application is being structured around the MERN stack:
+
+```text
+                 ┌────────────────────────────┐
+                 │          Client            │
+                 │       React.js             │
+                 │                            │
+                 │  Student Dashboard         │
+                 │  Admin Dashboard           │
+                 │  Course Pages              │
+                 │  Authentication            │
+                 │  Subscription / Payment    │
+                 └─────────────┬──────────────┘
+                               │
+                        HTTP / REST APIs
+                               │
+                               ▼
+                 ┌────────────────────────────┐
+                 │       Node.js + Express    │
+                 │          Backend           │
+                 │                            │
+                 │ Routes                     │
+                 │ Middleware                 │
+                 │ Controllers                │
+                 │ Business Logic             │
+                 └───────┬──────────┬─────────┘
+                         │          │
+                         │          │
+                         ▼          ▼
+                ┌─────────────┐  ┌──────────────────┐
+                │  MongoDB    │  │ External Services│
+                │             │  │                  │
+                │ Users       │  │ Razorpay         │
+                │ Courses     │  │ Cloudinary       │
+                │ Payments    │  │ Nodemailer       │
+                └─────────────┘  └──────────────────┘
+```
+
+The main idea is to keep the React client responsible for presentation and client-side state, while the Express backend remains responsible for authentication, authorization, business logic, database operations, and communication with external services.
+
+---
+
+# Features
+
+## Authentication
+
+The authentication system currently supports:
 
 - User registration
-- User login and logout
+- User login
+- Logout
 - JWT-based authentication
-- Password hashing with bcrypt
+- Password hashing using bcrypt
 - Profile retrieval
 - Profile updates
 - Avatar upload
 - Change password
 - Forgot-password flow
-- Password reset using a time-limited token
+- Password reset using a temporary token
 
-Passwords are never stored in plain text. Before a user document is saved, the password is hashed using `bcryptjs`.
+Passwords are hashed before being stored in MongoDB and are never stored in plain text.
 
-After registration or login, the server generates a JWT and stores it in an HTTP cookie named `user_info`.
+After successful registration or login, the server generates a JWT and stores it in the `user_info` HTTP cookie.
 
 ---
 
-## Role-based access control
+## Role-Based Access Control
 
-The system currently defines two roles:
+The application currently supports two roles:
 
-- `USER`
-- `ADMIN`
+```text
+USER
+ADMIN
+```
 
-Authenticated routes can be protected using middleware depending on the required role.
+Authorization is handled through middleware.
+
+This allows the API to distinguish between:
+
+- Public requests
+- Authenticated users
+- Subscribers
+- Administrators
 
 For example:
 
-- Regular users can access their profile and subscription-related functionality.
-- Administrators can create, update, and delete courses.
-- Course content is protected so that non-admin users need an active subscription to access it.
+```text
+                    Incoming Request
+                           |
+                           v
+                    Authentication
+                           |
+                    ┌──────┴──────┐
+                    │             │
+                 Not logged     Logged in
+                    │             │
+                  Reject       Check role
+                                  |
+                         ┌────────┴────────┐
+                         │                 │
+                       USER              ADMIN
+                         │                 │
+                  Check subscription   Admin access
+```
 
-The authorization logic is handled centrally in the authentication middleware instead of being duplicated across individual controllers.
+A regular user must have an active subscription before accessing protected course content, while administrators can manage courses and access protected resources without subscribing.
 
 ---
 
-## Course management
+# Course Management
 
-Courses are stored in MongoDB using a dedicated Mongoose model.
+Courses are stored in MongoDB using Mongoose models.
 
-A course contains:
+A course contains information such as:
 
 - Title
 - Description
@@ -75,391 +152,281 @@ A course contains:
 - Thumbnail
 - Lectures
 - Number of lectures
-- Creator information
+- Creator
 - Timestamps
 
 Administrators can:
 
-- Create a course
-- Update a course
-- Delete a course
-- Add lectures to a course
+- Create courses
+- Update courses
+- Delete courses
+- Add lectures
 
-Course thumbnails and lecture media are uploaded through the server using `multer` and then sent to Cloudinary for storage.
+Course thumbnails and lecture files are uploaded through the backend and stored using Cloudinary.
 
 ---
 
-## Subscription and payment system
+# Subscription and Payment System
 
-The LMS uses **Razorpay subscriptions** for the paid-access layer of the platform.
+The LMS uses Razorpay subscriptions for paid access to course content.
 
-The payment flow is split into a few steps rather than trusting the client alone.
+The payment process is handled through the backend rather than trusting payment information directly from the client.
 
-### Subscription flow
+## Payment flow
 
 ```text
-User
-  |
-  | 1. Request subscription
-  v
+React Client
+     |
+     | Request subscription
+     v
 Express API
-  |
-  | 2. Create Razorpay subscription
-  v
+     |
+     | Create subscription
+     v
 Razorpay
-  |
-  | 3. Return subscription ID
-  v
+     |
+     | Subscription ID
+     v
 Express API
-  |
-  | 4. Store subscription ID/status
-  v
+     |
+     | Save subscription information
+     v
 MongoDB
-  |
-  | 5. Client completes checkout
-  v
+     |
+     | Client opens Razorpay Checkout
+     v
 Razorpay
-  |
-  | 6. Payment details + signature
-  v
-Verify API
-  |
-  | 7. Validate subscription ID
-  | 8. Generate HMAC signature
-  v
+     |
+     | Payment response + signature
+     v
+Verification API
+     |
+     | Validate signature
+     v
 MongoDB
-  |
-  | 9. Mark user subscription as active
-  v
-Course access
+     |
+     | Update subscription status
+     v
+Course Access
 ```
 
-The server verifies the Razorpay signature using HMAC-SHA256 before marking the user's subscription as active.
+The server verifies the Razorpay signature before activating a user's subscription.
 
-Payment records containing the Razorpay payment ID, subscription ID, and signature are stored in the `Payment` collection.
-
-Administrators can also query Razorpay subscription information through the payments module.
+Payment information is stored separately in the `Payment` collection.
 
 ---
 
-## How course access works
+# How a request flows through the application
 
-Course access is tied to the user's subscription status.
-
-The request flow is:
-
-```text
-Client
-  |
-  | GET /api/v1/courses/:id
-  v
-isLoggedIn middleware
-  |
-  | Verify JWT from cookie
-  v
-authorizedSubscriber middleware
-  |
-  | Check user role
-  | Check subscription.status
-  v
-Course Controller
-  |
-  | Fetch course from MongoDB
-  v
-MongoDB
-  |
-  v
-Course / Lecture Response
-```
-
-An administrator can access protected course content without purchasing a subscription.
-
-A regular user must have:
-
-```text
-subscription.status === "active"
-```
-
-to pass the subscriber authorization middleware.
-
----
-
-# System Architecture
-
-The backend follows a layered structure. Instead of placing all logic inside the route definitions, requests move through different layers with each layer handling a specific responsibility.
-
-```text
-                         ┌──────────────────────┐
-                         │       Client         │
-                         │ Browser / API Client │
-                         └──────────┬───────────┘
-                                    │
-                                    │ HTTP Request
-                                    v
-                         ┌──────────────────────┐
-                         │    Express Server    │
-                         │       app.js         │
-                         └──────────┬───────────┘
-                                    │
-                                    v
-                         ┌──────────────────────┐
-                         │       Routes         │
-                         │ user / course /      │
-                         │ payment routes       │ 
-                         └──────────┬───────────┘
-                                    │
-                                    v
-                  ┌────────────────────────────────┐
-                  │          Middleware            │
-                  │                                │
-                  │ JWT Authentication             │
-                  │ Role Authorization             │
-                  │ Subscription Authorization     │
-                  │ File Upload Handling           │
-                  │ Error Handling                 │
-                  └───────────────┬────────────────┘
-                                  │
-                                  v
-                  ┌────────────────────────────────┐
-                  │          Controllers           │
-                  │                                │
-                  │ User Controller                │
-                  │ Course Controller              │
-                  │ Payment Controller             │
-                  └───────────────┬────────────────┘
-                                  │
-                                  v
-                  ┌────────────────────────────────┐
-                  │          Data Models           │
-                  │                                │
-                  │ User                           │
-                  │ Course                         │
-                  │ Payment                        │
-                  └───────────────┬────────────────┘
-                                  │
-                                  v
-                         ┌──────────────────┐
-                         │     MongoDB      │
-                         │                  │
-                         │ users            │
-                         │ courses          │
-                         │ payments         │
-                         └──────────────────┘
-
-                    External Services
-                    ──────────────────
-
-              ┌──────────────┐   ┌──────────────┐
-              │  Cloudinary  │   │   Razorpay   │
-              │ Media Store  │   │  Payments    │
-              └──────▲───────┘   └──────▲───────┘
-                     │                  │
-                     └──────────┬───────┘
-                                │
-                          Controllers
-
-                         ┌──────────────┐
-                         │  Nodemailer  │
-                         │ Password     │
-                         │ Reset Email  │
-                         └──────▲───────┘
-                                │
-                           User Controller
-```
-
----
-
-# Request lifecycle
-
-One of the main design decisions in the project is keeping request handling, authentication, business logic, and persistence separated.
+One of the main design goals of the backend is to keep the different responsibilities separated.
 
 A typical request follows this path:
 
 ```text
-HTTP Request
+React Client
      |
+     | HTTP Request
      v
 Express Route
      |
      v
 Middleware
      |
-     +---- Authentication
-     |
-     +---- Authorization
-     |
-     +---- File Upload
+     ├── Authentication
+     ├── Authorization
+     ├── File Upload
+     └── Error Handling
      |
      v
 Controller
      |
-     +---- Validate input
+     ├── Validate request
+     ├── Execute business logic
+     ├── Call external services
+     └── Read / write database
      |
-     +---- Execute business logic
+     v
+MongoDB / External Service
      |
-     +---- Call external service if required
-     |
-     +---- Read/write MongoDB
+     v
+Controller
      |
      v
 HTTP Response
+     |
+     v
+React Client
 ```
 
-This makes the server easier to understand and gives each part of the application a clear responsibility.
+This separation makes it easier to modify one part of the system without tightly coupling everything together.
 
 ---
 
-# Authentication flow
+# Example: Opening a protected course
+
+Suppose a student opens a course from the React application.
+
+The flow is:
+
+```text
+Student
+   |
+   v
+React Course Page
+   |
+   | GET /api/v1/courses/:id
+   v
+Express Router
+   |
+   v
+isLoggedIn Middleware
+   |
+   | Verify JWT
+   v
+authorizedSubscriber Middleware
+   |
+   | Check user role
+   | Check subscription.status
+   v
+Course Controller
+   |
+   | Find course
+   v
+MongoDB
+   |
+   v
+Course + Lecture Data
+   |
+   v
+Express Response
+   |
+   v
+React
+   |
+   v
+Course Page
+```
+
+This means the frontend does not decide whether a user is allowed to view protected content. The final authorization decision is made by the backend.
+
+---
+
+# Authentication Flow
 
 ## Registration
 
 ```text
-User submits:
-name + email + password + optional avatar
+React Registration Form
+          |
+          v
+POST /api/v1/users/register
+          |
+          v
+User Controller
+          |
+          ├── Validate input
+          ├── Check existing email
+          ├── Hash password
+          ├── Upload avatar (if provided)
+          ├── Create user
+          └── Generate JWT
                     |
                     v
-             Register Route
+              HTTP Cookie
                     |
                     v
-           User Controller
-                    |
-             Check email
-                    |
-        ┌───────────┴───────────┐
-        |                       |
-     Exists                  New user
-        |                       |
-      Error             Create MongoDB user
-                                |
-                         Hash password
-                                |
-                       Upload avatar
-                         to Cloudinary
-                                |
-                       Generate JWT
-                                |
-                   Store JWT in cookie
-                                |
-                                v
-                          User Response
+              React Client
 ```
-
-The `User` schema contains validation for fields such as email and password length, and the password field is configured so it is not returned by normal queries.
 
 ---
 
 ## Login
 
 ```text
-Email + Password
+React Login Form
        |
        v
-Login Route
+POST /api/v1/users/login
        |
        v
 User Controller
        |
-       v
-Find user by email
-       |
-       v
-Compare password using bcrypt
-       |
-   ┌───┴────┐
-   |        |
-Invalid    Valid
-   |        |
- Error      Generate JWT
-            |
-            v
-       Set user_info cookie
-            |
-            v
-       Return user data
+       ├── Find user
+       ├── Compare password using bcrypt
+       └── Generate JWT
+                    |
+                    v
+              user_info Cookie
+                    |
+                    v
+              React Client
 ```
 
 ---
 
-## Forgot password flow
-
-The password recovery process is handled through a temporary reset token.
+## Forgot Password
 
 ```text
-User enters email
-        |
-        v
-Find user
-        |
-        v
-Generate random reset token
-        |
-        v
-Hash token before storing
-        |
-        v
-Store token + expiry
-        |
-        v
-Generate reset URL
-        |
-        v
-Nodemailer
-        |
-        v
-User receives email
-        |
-        v
-Submit new password
-        |
-        v
-Hash received reset token
-        |
-        v
-Find valid token that has not expired
-        |
-        v
-Update password
-        |
-        v
-Remove reset token
+User requests password reset
+            |
+            v
+       User Controller
+            |
+            v
+   Generate reset token
+            |
+            v
+   Store hashed token + expiry
+            |
+            v
+       Nodemailer
+            |
+            v
+      User receives email
+            |
+            v
+      Reset password
+            |
+            v
+   Validate token + expiry
+            |
+            v
+     Update password
 ```
 
-The reset token is configured to expire after a limited period rather than remaining valid indefinitely.
+The reset token is temporary and expires after a limited period.
 
 ---
 
-# Media upload flow
+# Media Upload Flow
 
-Course thumbnails and user avatars use `multer` as the first stage of file handling.
-
-The flow is:
+The backend uses Multer for receiving uploaded files and Cloudinary for storing them.
 
 ```text
-Client uploads image/video
-          |
-          v
-       Multer
-          |
-          | temporary local file
-          v
-      Controller
-          |
-          v
-       Cloudinary
-          |
-          | secure_url + public_id
-          v
-       MongoDB
-          |
-          v
-  Store media references
+React Client
+     |
+     | multipart/form-data
+     v
+Multer Middleware
+     |
+     | Temporary file
+     v
+Controller
+     |
+     v
+Cloudinary
+     |
+     | secure_url + public_id
+     v
+MongoDB
+     |
+     v
+Media reference stored
 ```
 
-The system stores Cloudinary identifiers and URLs in MongoDB rather than keeping the actual media inside the database.
+The database stores the Cloudinary URL and public ID rather than storing the actual media files inside MongoDB.
 
-Temporary uploaded files are removed after the upload process.
-
-The current upload middleware accepts:
+The current upload middleware supports:
 
 - PNG
 - JPG
@@ -467,13 +434,13 @@ The current upload middleware accepts:
 - WebP
 - MP4
 
-and limits uploaded files to 50 MB.
+with a maximum file size of 50 MB.
 
 ---
 
-# Data model
+# Data Model
 
-The application currently uses three main Mongoose models.
+The current backend uses three primary Mongoose models.
 
 ## User
 
@@ -494,8 +461,6 @@ User
 ├── createdAt
 └── updatedAt
 ```
-
-The subscription information is kept on the user document so the authorization middleware can quickly determine whether the user is subscribed.
 
 ---
 
@@ -521,7 +486,7 @@ Course
 └── updatedAt
 ```
 
-Lectures are embedded inside the course document.
+Lectures are currently stored as part of the course document.
 
 ---
 
@@ -534,13 +499,11 @@ Payment
 └── razorpay_signature
 ```
 
-Payment records are stored separately from the user and course documents.
+Payment records are maintained separately from user and course documents.
 
 ---
 
-# API structure
-
-The API is grouped into three major modules.
+# API Structure
 
 ## User APIs
 
@@ -552,9 +515,9 @@ Base path:
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| POST | `/register` | Register a new user |
+| POST | `/register` | Register a user |
 | POST | `/login` | Login |
-| GET | `/profile` | Get logged-in user's profile |
+| GET | `/profile` | Get current user profile |
 | GET | `/logout` | Logout |
 | POST | `/forgot-password` | Request password reset |
 | POST | `/reset-password/:token` | Reset password |
@@ -574,13 +537,13 @@ Base path:
 | Method | Endpoint | Purpose |
 |---|---|---|
 | GET | `/` | Get courses |
-| POST | `/` | Create a course (Admin) |
-| GET | `/:id` | Access course content |
-| PUT | `/:id` | Update course (Admin) |
-| DELETE | `/:id` | Delete course (Admin) |
-| POST | `/:id` | Add a lecture to a course (Admin) |
+| POST | `/` | Create a course |
+| GET | `/:id` | Get course |
+| PUT | `/:id` | Update a course |
+| DELETE | `/:id` | Delete a course |
+| POST | `/:id` | Add lecture |
 
-Course creation and lecture upload use the multipart upload middleware.
+Administrative endpoints are protected by the appropriate authentication and authorization middleware.
 
 ---
 
@@ -595,106 +558,213 @@ Base path:
 | Method | Endpoint | Purpose |
 |---|---|---|
 | GET | `/razorpay-key` | Get Razorpay public key |
-| POST | `/subscribe` | Create a subscription |
-| POST | `/verify` | Verify a payment |
-| POST | `/unsubscribe` | Cancel a subscription |
-| GET | `/` | Retrieve subscription/payment information (Admin) |
+| POST | `/subscribe` | Create subscription |
+| POST | `/verify` | Verify payment |
+| POST | `/unsubscribe` | Cancel subscription |
+| GET | `/` | Get payment/subscription information |
 
 ---
 
-# Folder structure
+# Project Structure
+
+The project is being organized so that the React client and Express server remain separate.
 
 ```text
 LMS
 │
-├── front.html
+├── client/                         # React frontend
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   ├── hooks/
+│   │   ├── context/
+│   │   ├── assets/
+│   │   └── App.jsx
+│   │
+│   └── package.json
+│
+├── server/                         # Node.js / Express backend
+│   │
+│   ├── app.js
+│   ├── server.js
+│   ├── package.json
+│   │
+│   ├── config/
+│   │   └── dbConnection.js
+│   │
+│   ├── controller/
+│   │   ├── user.controller.js
+│   │   ├── course.controller.js
+│   │   └── payment.controller.js
+│   │
+│   ├── middlewares/
+│   │   ├── auth.middleware.js
+│   │   ├── error.middleware.js
+│   │   └── multer.middleware.js
+│   │
+│   ├── models/
+│   │   ├── user.model.js
+│   │   ├── course.model.js
+│   │   └── payment.model.js
+│   │
+│   ├── routes/
+│   │   ├── user.routes.js
+│   │   ├── course.routes.js
+│   │   └── payment.routes.js
+│   │
+│   └── utils/
+│       ├── error.util.js
+│       ├── multer.util.js
+│       └── sendEmail.js
 │
 ├── uploads/
-│   └── ...
 │
-└── server/
-    │
-    ├── app.js
-    ├── server.js
-    ├── package.json
-    ├── package-lock.json
-    │
-    ├── config/
-    │   └── dbConnection.js
-    │
-    ├── controller/
-    │   ├── user.controller.js
-    │   ├── course.controller.js
-    │   └── payment.controller.js
-    │
-    ├── middlewares/
-    │   ├── auth.middleware.js
-    │   ├── error.middleware.js
-    │   └── multer.middleware.js
-    │
-    ├── models/
-    │   ├── user.model.js
-    │   ├── course.model.js
-    │   └── payment.model.js
-    │
-    ├── routes/
-    │   ├── user.routes.js
-    │   ├── course.routes.js
-    │   └── payment.routes.js
-    │
-    └── utils/
-        ├── error.util.js
-        ├── multer.util.js
-        └── sendEmail.js
+├── front.html
+│
+└── README.md
 ```
+
+> The `client/` structure represents the planned React frontend and will evolve as the UI is implemented.
 
 ---
 
-# Technologies used
+# Technology Stack
+
+## Frontend
+
+- React.js
+- JavaScript
+- HTML5
+- CSS3
+- React Router (planned)
+- Axios / Fetch for API communication
 
 ## Backend
 
-- **Node.js**
-- **Express.js**
+- Node.js
+- Express.js
 
 ## Database
 
-- **MongoDB**
-- **Mongoose**
+- MongoDB
+- Mongoose
 
 ## Authentication & Security
 
-- **JSON Web Tokens (JWT)**
-- **bcryptjs**
-- **cookie-parser**
+- JSON Web Tokens (JWT)
+- bcryptjs
+- cookie-parser
 
 ## Payments
 
-- **Razorpay**
+- Razorpay
 
-## File & Media Handling
+## Media Storage
 
-- **Multer**
-- **Cloudinary**
+- Multer
+- Cloudinary
 
 ## Email
 
-- **Nodemailer**
+- Nodemailer
 
-## Middleware / Utilities
+## Development Tools
 
-- **CORS**
-- **Morgan**
-- **dotenv**
-- **Nodemon**
+- Git
+- GitHub
+- Postman
+- Nodemon
+- dotenv
+- Morgan
+- CORS
 
 ---
 
-# Environment variables
+# Frontend Architecture
 
-The server uses environment variables for configuration and secrets.
+The React client will sit on top of the existing REST API.
 
-Typical configuration includes:
+The frontend is planned around separate pages and reusable components.
+
+```text
+React Application
+│
+├── Authentication
+│   ├── Login
+│   ├── Register
+│   ├── Forgot Password
+│   └── Reset Password
+│
+├── Student Area
+│   ├── Dashboard
+│   ├── Course Listing
+│   ├── Course Details
+│   ├── Lecture Player
+│   ├── Profile
+│   └── Subscription
+│
+├── Admin Area
+│   ├── Dashboard
+│   ├── Course Management
+│   ├── Lecture Management
+│   └── User / Subscription Management
+│
+└── Shared Components
+    ├── Navbar
+    ├── Sidebar
+    ├── Course Card
+    ├── Forms
+    ├── Loaders
+    └── Protected Routes
+```
+
+The client will communicate with the backend through REST APIs rather than accessing MongoDB directly.
+
+---
+
+# Frontend ↔ Backend Communication
+
+The intended communication flow is:
+
+```text
+React Component
+      |
+      v
+API Service Layer
+      |
+      | HTTP Request
+      v
+Express Route
+      |
+      v
+Middleware
+      |
+      v
+Controller
+      |
+      v
+MongoDB / External Service
+      |
+      v
+JSON Response
+      |
+      v
+React State
+      |
+      v
+Updated UI
+```
+
+This keeps database credentials, payment secrets, JWT secrets, and external-service credentials on the server rather than exposing them to the browser.
+
+---
+
+# Environment Variables
+
+The backend uses environment variables for configuration and credentials.
+
+Example:
 
 ```env
 PORT=
@@ -721,62 +791,120 @@ SMTP_PASSWORD=
 SMTP_FROM_EMAIL=
 ```
 
-Do not commit the `.env` file to GitHub.
+Do not commit `.env` files or secret keys to GitHub.
 
 ---
 
-# Running the project locally
+# Running the Backend Locally
 
-## 1. Clone the repository
+## Clone the repository
 
 ```bash
 git clone https://github.com/Mithlesh-16/LMS.git
 cd LMS/server
 ```
 
-## 2. Install dependencies
+## Install dependencies
 
 ```bash
 npm install
 ```
 
-## 3. Configure environment variables
+## Configure environment variables
 
-Create a `.env` file inside the `server` directory and add the required values.
+Create a `.env` file inside the `server` directory.
 
-## 4. Start the server
+## Start the development server
 
 ```bash
 npm start
 ```
 
-The server uses `nodemon`, so changes to the backend can be picked up automatically during development.
+---
+
+# Current Development Status
+
+The backend and its core services are already being developed around the following modules:
+
+- Authentication
+- Role-based authorization
+- Course management
+- Lecture management
+- Subscription handling
+- Razorpay integration
+- Cloudinary integration
+- Password recovery
+- MongoDB persistence
+
+The React client is the next major layer of the project.
+
+The goal is to expose these backend capabilities through a clean web interface with separate student and administrator workflows.
 
 ---
 
-# Development notes
+# Planned Frontend Work
 
-The project is currently focused on the backend side of the LMS.
+The React client will be developed incrementally.
 
-The `front.html` file in the root directory is a small standalone page used for testing the Razorpay subscription checkout flow. It is not intended to represent the complete frontend of the LMS.
+### Phase 1 — Authentication
 
-The repository is still under development, and some parts of the application can be extended further, especially around frontend integration, course-content delivery, testing, and production deployment.
+- Login
+- Registration
+- Logout
+- Forgot password
+- Reset password
+- Protected routes
+
+### Phase 2 — Student Experience
+
+- Course listing
+- Course details
+- Lecture access
+- Profile management
+- Subscription status
+
+### Phase 3 — Admin Experience
+
+- Admin dashboard
+- Course creation
+- Course editing
+- Lecture upload
+- Course deletion
+- User/subscription management
+
+### Phase 4 — Payment Integration
+
+- Subscription checkout
+- Razorpay integration
+- Payment verification
+- Subscription status
 
 ---
 
-# Possible next improvements
+# Future Improvements
 
-Some areas I would like to improve as the project evolves:
+Some areas I would like to work on as the project grows:
 
-- Build a dedicated frontend for students and administrators
-- Add automated API tests
-- Improve validation and error handling
-- Add course progress tracking
-- Add lecture completion tracking
-- Add richer admin analytics
-- Improve payment reconciliation and subscription lifecycle handling
-- Add production deployment and monitoring
-- Improve API documentation with Swagger/OpenAPI
+- Complete React frontend
+- Course progress tracking
+- Lecture completion tracking
+- Admin analytics
+- Automated API testing
+- Better request validation
+- API documentation with Swagger/OpenAPI
+- Improved payment/subscription lifecycle handling
+- Production deployment
+- Application monitoring and logging
+
+---
+
+# Development Notes
+
+The project is intentionally being developed in separate frontend and backend layers.
+
+The existing backend exposes REST APIs that can be consumed by the React client. This makes it possible to develop and test the backend independently while gradually building the frontend around the same API contract.
+
+The `front.html` file is a small standalone page used to test the Razorpay subscription checkout flow. It is not the final frontend of the application.
 
 ---
 
@@ -784,4 +912,4 @@ Some areas I would like to improve as the project evolves:
 
 **Mithlesh Kumar**
 
-GitHub: https://github.com/Mithlesh-16
+GitHub: https://github.com/Mithlesh-16/LMS
