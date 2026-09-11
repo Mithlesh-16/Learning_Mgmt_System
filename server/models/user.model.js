@@ -53,6 +53,7 @@ const userSchema = new Schema({
 });
 
 userSchema.methods.generateToken = function(){
+    // jwt.sign(payload, secret, options); 
     return jwt.sign({
         id: this._id,
         fullName: this.fullName,

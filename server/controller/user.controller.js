@@ -15,7 +15,7 @@ const cookieOptions = {
 const registerUser = async (req, res, next) => {
     const {fullName, email, password, role} = req.body;
     
-    if(!fullName || !email || !password){
+    if(!fullName || !email || !password){   //input validation
         return next(new AppError('All Fields are Required', 400));
     }
 
@@ -40,7 +40,7 @@ const registerUser = async (req, res, next) => {
         return next(new AppError('User Registration Failed, please try Again!! ', 404));
     }
 
-    //ToDo: file upload for avatar
+    //file upload for avatar
     if(req.file){
         console.log("File Details",req.file);
         try{
