@@ -204,37 +204,37 @@ The backend follows a layered structure. Instead of placing all logic inside the
                                     v
                          ┌──────────────────────┐
                          │       Routes         │
-                         │ user / course /     │
-                         │ payment routes      │
+                         │ user / course /      │
+                         │ payment routes       │ 
                          └──────────┬───────────┘
                                     │
                                     v
                   ┌────────────────────────────────┐
-                  │          Middleware             │
+                  │          Middleware            │
                   │                                │
                   │ JWT Authentication             │
                   │ Role Authorization             │
                   │ Subscription Authorization     │
-                  │ File Upload Handling            │
+                  │ File Upload Handling           │
                   │ Error Handling                 │
                   └───────────────┬────────────────┘
                                   │
                                   v
                   ┌────────────────────────────────┐
-                  │          Controllers            │
+                  │          Controllers           │
                   │                                │
-                  │ User Controller                 │
-                  │ Course Controller               │
-                  │ Payment Controller              │
+                  │ User Controller                │
+                  │ Course Controller              │
+                  │ Payment Controller             │
                   └───────────────┬────────────────┘
                                   │
                                   v
                   ┌────────────────────────────────┐
-                  │          Data Models            │
+                  │          Data Models           │
                   │                                │
-                  │ User                            │
-                  │ Course                          │
-                  │ Payment                         │
+                  │ User                           │
+                  │ Course                         │
+                  │ Payment                        │
                   └───────────────┬────────────────┘
                                   │
                                   v
