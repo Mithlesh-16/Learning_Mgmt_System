@@ -572,7 +572,6 @@ The project is currently being developed as a MERN application.
 The Express/MongoDB backend is implemented and provides the core REST API.
 The React client is being developed on top of this API and will provide
 student and administrator interfaces.
-
 The project is being organized so that the React client and Express server remain separate.
 
 ```text
