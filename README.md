@@ -1,12 +1,11 @@
 # Learning Management System (LMS)
 
-A full-stack Learning Management System built with the MERN stack, with a Node.js and Express backend and a React-based client planned as the frontend layer.
+A full-stack Learning Management System currently under development using the MERN stack.
 
-The project focuses on the backend architecture and core services required by an online learning platform, including authentication, role-based access control, course management, media uploads, subscriptions, payments, and password recovery.
+The backend is implemented using Node.js, Express, and MongoDB and provides the core services of the platform, including authentication, role-based access control, course and lecture management, media uploads, subscriptions, payments, and password recovery.
 
-(The project is being developed incrementally, with the backend services and API layer serving as the foundation for the frontend).
+A React-based client is being developed on top of the existing REST API to provide dedicated interfaces for students and administrators. The project is being developed incrementally, with the backend and API layer forming the foundation for the complete application.
 
-The React client is being added on top of the existing API layer to provide separate experiences for students and administrators.
 
 ---
 
@@ -31,8 +30,31 @@ The next stage of the project is to build a React client that consumes these API
 
 ---
 
-## Planned MERN Architecture
+## Current Status
 
+### Implemented
+
+- Node.js + Express backend
+- MongoDB + Mongoose data layer
+- JWT authentication
+- Role-based authorization
+- Course and lecture management
+- Cloudinary media uploads
+- Razorpay subscription and payment flow
+- Password recovery through email
+
+### In Development
+
+- React client
+- Student interface
+- Administrator interface
+- Frontend authentication flow
+- Course browsing and lecture interface
+- Subscription and payment UI
+- Frontend-to-backend API integration
+
+## Application Architecture
+The backend and REST API layer are implemented, while the React client shown below represents the full-stack architecture currently being developed.
 The overall application is being structured around the MERN stack:
 
 ```text
@@ -692,7 +714,9 @@ LMS
 
 The React client will sit on top of the existing REST API.
 
-The frontend is planned around separate pages and reusable components.
+The React client is currently under development and is being structured around separate authentication, student, administrator, and shared UI components.
+
+The intended structure is:
 
 ```text
 React Application
